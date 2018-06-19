@@ -11,10 +11,6 @@
 #include "usb_desc.h"
 #include "usb_rw.h"
 
-/* ---------------- */
-#include "pid_def.h"
-/* ---------------- */
-
 /* Buffer used for control requests. */
 uint8_t usbd_control_buffer [128];
 
