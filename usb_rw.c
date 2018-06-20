@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include "usb_rw.h"
 
-#include <libopencm3/stm32/gpio.h>
-
 #define LIMIT_MAX(l,a)	(a > l ? l : a)
 
 static void _rx_data_cb (struct usbrw *inst)
