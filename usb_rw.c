@@ -4,7 +4,6 @@
 
 #define LIMIT_MAX(l,a)	(a > l ? l : a)
 
-
 static void _rx_data_cb (struct usbrw *inst)
 {
 	uint8_t len = usbd_ep_read_packet (inst->usbd_dev, inst->rx_ep, &inst->_fifo.rx_buf [inst->_fifo.rx_produce], 64);
