@@ -23,15 +23,14 @@ static void _tx_data_cb (struct usbrw *inst)
 	len = inst->_fifo.tx_produce - inst->_fifo.tx_consume;	
 
 	/* Check for overlap */
-	if (len < 0) {		
-		usbd_ep_write_packet (inst->usbd_dev, inst->tx_ep, &inst->_fifo.tx_buf [inst->_fifo.tx_consume], 
-			USB_RINGBUFFER_SIZE_TX - inst->_fifo.tx_consume);
-		inst->_fifo.tx_consume = 0;
+	if (len < 0) {
+		len = LIMIT_MAX (64, USB_RINGBUFFER_SIZE_TX - inst->_fifo.tx_consume);
+		usbd_ep_write_packet (inst->usbd_dev, inst->tx_ep, &inst->_fifo.tx_buf [inst->_fifo.tx_consume], len);
+		inst->_fifo.tx_consume = (inst->_fifo.tx_consume + len) & USB_RINGBUFFER_MASK_TX;
 		return;
-	} else
-		len = LIMIT_MAX (64, len);		
+	}
 	
-	if (len) {
+	if ((len = LIMIT_MAX (64, len))) {
 		/* Send message by usb */
 		usbd_ep_write_packet (inst->usbd_dev, inst->tx_ep, &inst->_fifo.tx_buf [inst->_fifo.tx_consume], len);
 		inst->_fifo.tx_consume = (inst->_fifo.tx_consume + len) & USB_RINGBUFFER_MASK_TX;		
