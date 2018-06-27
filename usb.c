@@ -7,6 +7,7 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
 
+#include "config.h"
 #include "usb.h"
 #include "usb_desc.h"
 #include "usb_rw.h"
@@ -62,6 +63,7 @@ void stdout_data_tx_cb (usbd_device *usbd_dev, uint8_t ep)
 	_stdout->tx_callback (_stdout);
 }
 
+
 static enum usbd_request_return_codes cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, uint8_t **buf,
 		uint16_t *len, void (**complete)(usbd_device *usbd_dev, struct usb_setup_data *req))
 {
@@ -101,7 +103,7 @@ static enum usbd_request_return_codes cdcacm_control_request(usbd_device *usbd_d
 
 static void comp_set_config(usbd_device *dev, uint16_t wValue)
 {
-	(void) wValue;
+	configured = wValue;
 
 	usbd_ep_setup (dev, 0x01, USB_ENDPOINT_ATTR_BULK, 64, stdout_data_rx_cb);
 	usbd_ep_setup (dev, 0x81, USB_ENDPOINT_ATTR_BULK, 64, stdout_data_tx_cb);
