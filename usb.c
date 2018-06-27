@@ -26,10 +26,9 @@ static bool configured;
 #ifdef USB_COMM
 int _write(int file, char *ptr, int len)
 {
-	if (!configured)
-		return 0;
-		
 	if (file == 1) {
+		if (!configured)
+			return 0;
 		usbrw_write (_stdout, ptr, len);	
 		return len;
 	}
