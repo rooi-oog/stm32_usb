@@ -21,9 +21,14 @@ usbd_device *usbd_dev;
 /* Instance of libusbrw structure */
 usbrw_t *_stdout;
 
+static bool configured;
+
 #ifdef USB_COMM
 int _write(int file, char *ptr, int len)
 {
+	if (!configured)
+		return 0;
+		
 	if (file == 1) {
 		usbrw_write (_stdout, ptr, len);	
 		return len;
