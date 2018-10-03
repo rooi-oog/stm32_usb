@@ -18,29 +18,19 @@ static void _rx_data_cb (struct usbrw *inst)
 
 static void _tx_data_cb (struct usbrw *inst)
 {
-	int len;
+	int l;
+	char tmp [64];
 	
-	/* Disable direct call of this function */
-	inst->_fifo.tx_cts = 0;
-	
-	/* Calc message length */
-	len = inst->_fifo.tx_produce - inst->_fifo.tx_consume;	
-
-	/* Check for overlap */
-	if (len < 0) {
-		len = LIMIT_MAX (64, USB_RINGBUFFER_SIZE_TX - inst->_fifo.tx_consume);
-		usbd_ep_write_packet (inst->usbd_dev, inst->tx_ep, &inst->_fifo.tx_buf [inst->_fifo.tx_consume], len);
-		inst->_fifo.tx_consume = (inst->_fifo.tx_consume + len) & USB_RINGBUFFER_MASK_TX;
-		return;
+	for (l = 0; l < 64 && inst->_fifo.tx_produce != inst->_fifo.tx_consume; l++) {
+		tmp [l] = inst->_fifo.tx_buf [inst->_fifo.tx_consume];
+		inst->_fifo.tx_consume = (inst->_fifo.tx_consume + 1) & USB_RINGBUFFER_MASK_TX;
 	}
 	
-	if ((len = LIMIT_MAX (64, len))) {
-		/* Send message by usb */
-		usbd_ep_write_packet (inst->usbd_dev, inst->tx_ep, &inst->_fifo.tx_buf [inst->_fifo.tx_consume], len);
-		inst->_fifo.tx_consume = (inst->_fifo.tx_consume + len) & USB_RINGBUFFER_MASK_TX;		
-	} else		
-		inst->_fifo.tx_cts = 1;		/* Nothing to transmit, allowing direct call */
-
+	/* Clear to send if fifo is empty */
+	inst->_fifo.tx_cts = inst->_fifo.tx_produce == inst->_fifo.tx_consume;	
+	
+	if (l > 0)
+		usbd_ep_write_packet (inst->usbd_dev, inst->tx_ep, tmp, l);	
 }
 
 static void _usbrw_write (usbrw_t *inst, char *buf, uint8_t len)
@@ -91,17 +81,17 @@ int usbrw_read (usbrw_t *inst, char *buf, int len)
 		inst->_fifo.rx_consume = (inst->_fifo.rx_consume + 1) & USB_RINGBUFFER_MASK_RX;
 	}
 	
-	return l;	
+	return l;
 }
 
 void usbrw_write (usbrw_t *inst, char *buf, int len)
 {
-	if (len <= 64) {
+	if (len <= USB_RINGBUFFER_SIZE_TX) {
 		_usbrw_write (inst, buf, len);
 	} else {
 		int i;	
-		for (i = 0; (i + 64) < len; i += 64)	
-			_usbrw_write (inst, &buf [i], 64);
+		for (i = 0; (i + USB_RINGBUFFER_SIZE_TX) < len; i += USB_RINGBUFFER_SIZE_TX)	
+			_usbrw_write (inst, &buf [i], USB_RINGBUFFER_SIZE_TX);
 	
 		_usbrw_write (inst, &buf [i], len - i);
 	}	
