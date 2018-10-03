@@ -45,8 +45,7 @@ static void _tx_data_cb (struct usbrw *inst)
 
 static void _usbrw_write (usbrw_t *inst, char *buf, uint8_t len)
 {	
-	for (uint8_t l = 0; l < len; l++)
-	{
+	for (uint8_t l = 0; l < len; l++) {
 		inst->_fifo.tx_buf [inst->_fifo.tx_produce] = buf [l];
 		inst->_fifo.tx_produce = (inst->_fifo.tx_produce + 1) & USB_RINGBUFFER_MASK_TX;
 	}
@@ -87,8 +86,7 @@ int usbrw_read (usbrw_t *inst, char *buf, int len)
 {
 	int l;
 	
-	for (l = 0; inst->_fifo.rx_produce != inst->_fifo.rx_consume && l < len; l++) 
-	{
+	for (l = 0; inst->_fifo.rx_produce != inst->_fifo.rx_consume && l < len; l++)	{
 		buf [l] = inst->_fifo.rx_buf [inst->_fifo.rx_consume];
 		inst->_fifo.rx_consume = (inst->_fifo.rx_consume + 1) & USB_RINGBUFFER_MASK_RX;
 	}
