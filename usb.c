@@ -23,6 +23,11 @@ usbrw_t *_stdio;
 
 static bool configured;
 
+bool usb_configured (void)
+{
+	return configured;	
+}
+
 #ifdef USB_COMM
 int _write(int file, char *ptr, int len)
 {
@@ -66,7 +71,6 @@ void stdout_data_tx_cb (usbd_device *usbd_dev, uint8_t ep)
 	
 	_stdio->tx_callback (_stdio);
 }
-
 
 static enum usbd_request_return_codes cdcacm_control_request(usbd_device *usbd_dev, struct usb_setup_data *req, uint8_t **buf,
 		uint16_t *len, void (**complete)(usbd_device *usbd_dev, struct usb_setup_data *req))
@@ -136,10 +140,12 @@ void usb_cdcacm_init (void)
 #ifdef STM32F4							
 	usbd_dev = usbd_init (&otgfs_usb_driver, &dev_descr, &config, 
 							usb_strings, 3, usbd_control_buffer, sizeof (usbd_control_buffer));							
-#endif	
+#endif
+	
 
 	usbrw_init (&_stdio, usbd_dev, 0x01, 0x81);	
 	usbd_register_set_config_callback (usbd_dev, comp_set_config);
+
 
 #ifdef STM32F0
 	nvic_set_priority (NVIC_USB_IRQ, (2 << 4));

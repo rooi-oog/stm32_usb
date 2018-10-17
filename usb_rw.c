@@ -21,21 +21,24 @@ static void _tx_data_cb (struct usbrw *inst)
 	int l;
 	char tmp [64];
 	
+	inst->_fifo.tx_cts = 0;
+	
 	for (l = 0; l < 64 && inst->_fifo.tx_produce != inst->_fifo.tx_consume; l++) {
 		tmp [l] = inst->_fifo.tx_buf [inst->_fifo.tx_consume];
 		inst->_fifo.tx_consume = (inst->_fifo.tx_consume + 1) & USB_RINGBUFFER_MASK_TX;
 	}
 	
-	/* Clear to send if fifo is empty */
-	inst->_fifo.tx_cts = inst->_fifo.tx_produce == inst->_fifo.tx_consume;	
-	
 	if (l > 0)
 		usbd_ep_write_packet (inst->usbd_dev, inst->tx_ep, tmp, l);	
+	else		
+		/* Clear to send if fifo is empty and last packet was sent */
+		inst->_fifo.tx_cts = inst->_fifo.tx_produce == inst->_fifo.tx_consume;	
+
 }
 
-static void _usbrw_write (usbrw_t *inst, char *buf, uint8_t len)
+static void _usbrw_write (usbrw_t *inst, char *buf, int len)
 {	
-	for (uint8_t l = 0; l < len; l++) {
+	for (int l = 0; l < len; l++) {
 		inst->_fifo.tx_buf [inst->_fifo.tx_produce] = buf [l];
 		inst->_fifo.tx_produce = (inst->_fifo.tx_produce + 1) & USB_RINGBUFFER_MASK_TX;
 	}
