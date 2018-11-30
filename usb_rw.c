@@ -4,6 +4,7 @@
 
 #define LIMIT_MAX(l,a)	(a > l ? l : a)
 
+/* RX callback */
 static void _rx_data_cb (struct usbrw *inst)
 {
 	char tmp [64];
@@ -16,11 +17,13 @@ static void _rx_data_cb (struct usbrw *inst)
 	}
 }
 
+/* TX callback */
 static void _tx_data_cb (struct usbrw *inst)
 {
 	int l;
 	char tmp [64];
 	
+	/* Deny to direct call this function */
 	inst->_fifo.tx_cts = 0;
 	
 	for (l = 0; l < 64 && inst->_fifo.tx_produce != inst->_fifo.tx_consume; l++) {
@@ -31,11 +34,12 @@ static void _tx_data_cb (struct usbrw *inst)
 	if (l > 0)
 		usbd_ep_write_packet (inst->usbd_dev, inst->tx_ep, tmp, l);	
 	else		
-		/* Clear to send if fifo is empty and last packet was sent */
+		/* Clear to send if ringbuffer is empty and last packet was sent */
 		inst->_fifo.tx_cts = inst->_fifo.tx_produce == inst->_fifo.tx_consume;	
 
 }
 
+/* Write data to ringbuffer */
 static void _usbrw_write (usbrw_t *inst, char *buf, int len)
 {	
 	for (int l = 0; l < len; l++) {
@@ -48,17 +52,22 @@ static void _usbrw_write (usbrw_t *inst, char *buf, int len)
 		_tx_data_cb (inst);	
 }
 
+/* -- User accessible API ------------------------------ ------------------------ ------------------ */
+
+/* Return new pointer to usbrw_t struct */
 usbrw_t *usbrw_new (void)
 {
 	return (usbrw_t *) malloc (sizeof (struct usbrw));
 }
 
+/* Destroy pointer and release memory */
 void usbrw_destroy (usbrw_t **inst)
 {
 	free (*inst);
 	*inst = NULL;
 }
 
+/* Initialization of usbrw_t struct */
 void usbrw_init (usbrw_t **inst, usbd_device *dev, uint8_t rx_ep, uint8_t tx_ep)
 {
 	bzero (*inst, sizeof (usbrw_t));
@@ -70,15 +79,18 @@ void usbrw_init (usbrw_t **inst, usbd_device *dev, uint8_t rx_ep, uint8_t tx_ep)
 	(*inst)->_fifo.tx_cts = 1;
 }
 
+/* Check if rx ringbuffer is not empty */
 int usbrw_read_nonblock (usbrw_t *inst)
 {
 	return abs (inst->_fifo.rx_produce - inst->_fifo.rx_consume);
 }
 
+/* Read data from rx ringbuffer */
 int usbrw_read (usbrw_t *inst, char *buf, int len) 
 {
 	int l;
 	
+	/* Cycle continue until ringbuffer isn't empty of full length */
 	for (l = 0; inst->_fifo.rx_produce != inst->_fifo.rx_consume && l < len; l++)	{
 		buf [l] = inst->_fifo.rx_buf [inst->_fifo.rx_consume];
 		inst->_fifo.rx_consume = (inst->_fifo.rx_consume + 1) & USB_RINGBUFFER_MASK_RX;
